@@ -11,6 +11,9 @@
 #{code, calculations, etc.}
 #sink()
 
+# Write a table to a text file. 
+#write.table(dataframe,"Figs/dataframe.txt",sep="\t",row.names=FALSE)
+
 # Install Phyloseq: 
 #source('http://bioconductor.org/biocLite.R')
 #biocLite('phyloseq')
@@ -19,11 +22,13 @@ library(phyloseq)
 library(ggplot2)
 library(Rmisc)
 library(vegan)
+library(gridExtra)
+library(dplyr)
 
 setwd("~/Dropbox/Cladophora/Cladophora-Microbiota-2014/")
 
 # Load biom file. 
-biom <- import_biom("clado_otu_table_SILVA.biom", parseFunction=parse_taxonomy_default); biom 
+biom <- import_biom("clado_otu_table_SILVA.biom", parseFunction=parse_taxonomy_greengenes); biom 
 sample_names(biom)
 rank_names(biom)
 
@@ -39,7 +44,7 @@ bact <- subset_taxa(bact, Rank3!="D_3__Chloroplast"); bact
 bact.relabund <- transform_sample_counts(bact, function(x) x / sum(x)); bact.relabund
 
 # Plot richness metrics. 
-pdf("Clado-Re-analysis-Figs/plot_richness_raw.pdf")
+pdf("Figs/plot_richness_raw.pdf")
 plot_richness(bact, color = "Date", shape = "Site") 
 dev.off()
 
@@ -49,42 +54,48 @@ bact.rich.est$SampleID.1 <- row.names(bact.rich.est)
 bact.rich.est <- merge(bact.rich.est, sam.data, by = "SampleID.1")
 bact.rich.est$Site <- as.factor(bact.rich.est$Site)
 bact.rich.est$Date <- as.numeric(bact.rich.est$Date)
-head(bact.rich.est)  
+write.table(bact.rich.est,"Figs/bact.rich.est.txt",sep="\t",row.names=FALSE)
+
+# Linear regressions of diversity over time at each site. 
+bact.rich.est.sha <- summarySE(bact.rich.est, measurevar="Shannon", groupvars=c("Date","Site")); bact.rich.est.sha
+north <- subset(bact.rich.est.sha, Site=="North")
+point <- subset(bact.rich.est.sha, Site=="Point")
+south <- subset(bact.rich.est.sha, Site=="South")
+sink("Figs/diversity-linear-regressions.txt")
+lm.north <- lm(north$Shannon ~ north$Date); lm.north; summary(lm.north)
+lm.point <- lm(point$Shannon ~ point$Date); lm.point; summary(lm.point)
+lm.south <- lm(south$Shannon ~ south$Date); lm.south; summary(lm.south)
+sink()
 
 # Plot Shannon index richness. 
-pdf("Clado-Re-analysis-Figs/richness_shannon.pdf", width=6, height=3)
-bact.rich.est.sha <- summarySE(bact.rich.est, measurevar="Shannon", groupvars=c("Date","Site")); bact.rich.est.sha
+pdf("Figs/richness_shannon.pdf", width=6, height=3)
 p.sha <- ggplot(bact.rich.est.sha, aes(x=Date, y=Shannon)) + facet_grid(~Site) +
   geom_point(size = 2) +  geom_errorbar(aes(ymin=Shannon-se, ymax=Shannon+se)) 
-p.sha + theme_bw() +  
-  theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) #+ 
-# geom_line(lm(data = bact.rich.est.sha), color = ) + 
-# geom_line(lm(data = bact.rich.est.sha)) + 
-# geom_line(lm(data = bact.rich.est.sha))
+p.sha + theme_bw() + geom_smooth(method="lm", se = FALSE) +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 dev.off()
 
 # PERMANOVA. 
 df = as(sample_data(bact.relabund), "data.frame")
 d = phyloseq::distance(bact.relabund, "bray") 
 clado.adonis = adonis(d ~ Site*Date, df)
-sink("Clado-Re-analysis-Figs/permanova.txt")
+sink("Figs/permanova.txt")
 clado.adonis
 sink()
 
-# Ordination plot. Maybe tweak k value. 
+# Ordination. Maybe tweak k value. 
 ordNMDS <- ordinate(bact.relabund, method="NMDS", distance="bray", k=2)  
 
 # Plot ordination. 
-pdf("Clado-Re-analysis-Figs/nmds_plot_messy.pdf")
+pdf("Figs/nmds_plot_messy.pdf")
 ord <- plot_ordination(bact.relabund, ordNMDS, shape="Site", color = "Date") + geom_point(size=5)
 ord + theme_bw() + scale_colour_hue(h=c(300, 500))+
   geom_point(colour="white", size = 3)+
   geom_point(colour="black", size = 1)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())   
 dev.off()
 
-
 # Plot the phyla of the top 5000 OTUs. 
-pdf("Clado-Re-analysis-Figs/phyla_top5000_otus.pdf")
+pdf("Figs/phyla_top5000_otus.pdf")
 TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:5000])
 bact5000   <- prune_taxa(TopNOTUs, bact.relabund)
 p = plot_bar(bact5000, fill="Rank2")
@@ -92,7 +103,7 @@ p + geom_bar(aes(color=Rank2, fill=Rank2), stat="identity", position="stack")
 dev.off()
 
 # Plot the class of the top 500 OTUs. 
-pdf("Clado-Re-analysis-Figs/class_top500_otus.pdf")
+pdf("Figs/class_top500_otus.pdf")
 TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:500])
 bact500   <- prune_taxa(TopNOTUs, bact.relabund)
 p = plot_bar(bact500, fill="Rank3")
@@ -100,7 +111,7 @@ p + geom_bar(aes(color=Rank3, fill=Rank3), stat="identity", position="stack")
 dev.off()
 
 # Plot the phyla of the top 1000 OTUs. 
-pdf("Clado-Re-analysis-Figs/phyla_top1000_otus.pdf")
+pdf("Figs/phyla_top1000_otus.pdf")
 TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:1000])
 bact1000   <- prune_taxa(TopNOTUs, bact.relabund)
 p = plot_bar(bact1000, fill="Rank2", facet_grid=~Site)
@@ -108,7 +119,7 @@ p + geom_bar(aes(color=Rank2, fill=Rank2), stat="identity", position="stack")
 dev.off()
 
 # Plot the phyla of the top 100 OTUs. 
-pdf("Clado-Re-analysis-Figs/phyla_top100_otus.pdf")
+pdf("Figs/phyla_top100_otus.pdf")
 TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:100])
 bact100   <- prune_species(TopNOTUs, bact.relabund)
 p = plot_bar(bact100, fill="Rank2", facet_grid=~Site)
@@ -116,115 +127,117 @@ p + geom_bar(aes(color=Rank2, fill=Rank2), stat="identity", position="stack")
 dev.off()
 
 # Plot the genera of the top 1000 OTUs. 
-pdf("Clado-Re-analysis-Figs/genera_top1000_otus.pdf", width = 12, height = 8)
+pdf("Figs/genera_top1000_otus.pdf", width = 12, height = 8)
 TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:1000])
 bact1000 <- prune_taxa(TopNOTUs, bact.relabund)
 p = plot_bar(bact1000, "Date", fill="Rank6", facet_grid=~Site)
 p + geom_bar(aes(color=Rank6, fill=Rank6), stat="identity", position="stack") 
 dev.off()
 
-
-#################
-
-
 # Find top 30 genera and subset bact.relabund. 
-sort.genera <- sort(tapply(taxa_sums(bact.relabund), tax_table(bact.relabund)[, "Genus"], sum), TRUE)
+sort.genera <- sort(tapply(taxa_sums(bact.relabund), tax_table(bact.relabund)[, "Rank6"], sum), TRUE)
 top.genera <- sort.genera[1:30]
 top.genera.list <- names(top.genera)
-bact.relabund.subset = subset_taxa(bact.relabund, Genus %in% top.genera.list)
-bact.relabund.subset.taxa <- subset_taxa(bact.relabund.subset, Genus %in% as.factor(top.genera.list))
+bact.relabund.subset = subset_taxa(bact.relabund, Rank6 %in% top.genera.list)
+bact.relabund.subset.taxa <- subset_taxa(bact.relabund.subset, Rank6 %in% as.factor(top.genera.list))
 bact.relabund.subset.taxa
 relabund.top.genera <- psmelt(bact.relabund.subset.taxa)
 relabund.top.genera.genus <- relabund.top.genera%>%
-  group_by(Sample, Genus)%>%
+  group_by(Sample, Rank6)%>%
   mutate(GenusAbundance = sum(Abundance))%>%
-  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Phylum, Family, Genus)
+  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Rank2, Rank6, Rank6)
 head(relabund.top.genera.genus) 
-
 # Summary of genus abundance of top 30 genera. 
-relabund.top.genera.genus.est <- summarySE(relabund.top.genera.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Genus"))
+relabund.top.genera.genus.est <- summarySE(relabund.top.genera.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Rank6"))
 head(relabund.top.genera.genus.est)
 relabund.top.genera.genus.est$Date <- as.character(relabund.top.genera.genus.est$Date)
 relabund.top.genera.genus.est$Date <- as.numeric(relabund.top.genera.genus.est$Date) 
-
 # Plot summary of genus abundance of top 30 genera. 
-p <- ggplot(relabund.top.genera.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
+pdf("Figs/top30genera.pdf", height = 20, width = 11)
+p <- ggplot(relabund.top.genera.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
+dev.off()
+
+# Make a big taxa table. 
+write.table(bact.relabund@tax_table, "Figs/taxa_table.txt",sep="\t",row.names=FALSE)
 
 # Find methanotrophic bacteria by genus. 
 methanolist <- read.table(file ="taxa-of-interest/methanos.txt")
 methanolist <- as.vector(methanolist$V1)
-bact.relabund.methanos <- subset_taxa(bact.relabund, Genus %in% as.factor(methanolist))
+bact.relabund.methanos <- subset_taxa(bact.relabund, Rank6 %in% as.factor(methanolist))
 bact.relabund.methanos
 relabund.methanos <- psmelt(bact.relabund.methanos)
 relabund.methanos.genus <- relabund.methanos%>%
-  group_by(Sample, Genus)%>%
+  group_by(Sample, Rank6)%>%
   mutate(GenusAbundance = sum(Abundance))%>%
-  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Phylum, Family, Genus)
-relabund.methanos.genus.est <- summarySE(relabund.methanos.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Genus"))
+  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Rank2, Rank6, Rank6)
+relabund.methanos.genus.est <- summarySE(relabund.methanos.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Rank6"))
 head(relabund.methanos.genus.est)
 relabund.methanos.genus.est$Date <- as.character(relabund.methanos.genus.est$Date)
 relabund.methanos.genus.est$Date <- as.numeric(relabund.methanos.genus.est$Date) 
 
 # Plot summary of genus abundance of methanotrophic genera. 
-p <- ggplot(relabund.methanos.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 5, scales="free_y") + scale_colour_hue(h=c(400, 120))
-p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ labs(x="Date",y="Mean Relative\nAbundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
-
-# Plot summary of genus abundance of methanotrophic genera. 
-p <- ggplot(relabund.methanos.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 5, scales="free_y") + scale_colour_manual(values=cbPalette)
-p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ labs(x="Date",y="Mean Relative\nAbundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
-
-# Find all genera
-all.genera <- sort(get_taxa_unique(bact.relabund, "Genus"), decreasing=FALSE)
-bact.relabund.all.genera <- subset_taxa(bact.relabund, Genus %in% as.factor(all.genera))
-bact.relabund.all.genera <- psmelt(bact.relabund.all.genera)
-bact.relabund.all.genera.genus <- bact.relabund.all.genera%>%
-  group_by(Sample, Genus)%>%
-  mutate(GenusAbundance = sum(Abundance))%>%
-  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Family, Genus) 
-
-bact.relabund.all.genera.genus.est <- summarySE(bact.relabund.all.genera.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Genus"))
-head(bact.relabund.all.genera.genus.est)
-bact.relabund.all.genera.genus.est$Date <- as.character(bact.relabund.all.genera.genus.est$Date)
-bact.relabund.all.genera.genus.est$Date <- as.numeric(bact.relabund.all.genera.genus.est$Date)
-p <- ggplot(bact.relabund.all.genera.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
-p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
+pdf("Figs/methanos.pdf", width = 7, height = 6)
+p <- ggplot(relabund.methanos.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 2, scales="free_y") + scale_colour_hue(h=c(400, 120))
+p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ labs(x="Date",y="Mean Relative Abundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
+dev.off()
 
 # We want to calculate the total relative abundance of each phylum. 
 # "Melt" the phyloseq data into a dataframe and then take the top X most abundant phyla. 
 bact.melt <- psmelt(bact.relabund)
 bact.melt.sorted <- bact.melt %>%
-  group_by(Sample,Phylum) %>%
+  group_by(Sample,Rank2) %>%
   summarize(PhyAbund = sum(Abundance))%>%
-  group_by(Phylum)%>%
+  group_by(Rank2)%>%
   summarize(MeanPhyAbund = mean(PhyAbund))%>%
   arrange(-MeanPhyAbund) 
-
 # List of nPhyla top most abundant phyla. 
 nPhyla =16
 PhylumList <- bact.melt.sorted[1:nPhyla,1]
 PhylumList <- PhylumList[is.na(PhylumList)==FALSE,]
-PhylumList <- levels(droplevels(as.factor(PhylumList$Phylum)))
+PhylumList <- levels(droplevels(as.factor(PhylumList$Rank2)))
 PhylumList
 # Subset bact.melt for phyla. 
-bact.subset <- subset_taxa(bact.relabund, Phylum %in% PhylumList)
+bact.subset <- subset_taxa(bact.relabund, Rank2 %in% PhylumList)
 bact.subset.melt <- psmelt(bact.subset)
 bact.subset.melt.sorted = bact.subset.melt %>%
-  group_by(Sample,Site,Date,Phylum) %>%
+  group_by(Sample,Site,Date,Rank2) %>%
   summarize(PhyAbund = sum(Abundance)) 
-
 # Summarize phylum abundances. 
-bact.subset.melt.sorted.est <- summarySE(bact.subset.melt.sorted, measurevar="PhyAbund", groupvars=c("Site","Date", "Phylum"))
+bact.subset.melt.sorted.est <- summarySE(bact.subset.melt.sorted, measurevar="PhyAbund", groupvars=c("Site","Date", "Rank2"))
 head(bact.subset.melt.sorted.est)
 bact.subset.melt.sorted.est$Date <- as.character(bact.subset.melt.sorted.est$Date)
 bact.subset.melt.sorted.est$Date <- as.numeric(bact.subset.melt.sorted.est$Date) 
-
 # Plot top phyla abundances. 
-p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=PhyAbund-se, ymax=PhyAbund+se)) + facet_wrap(~Phylum, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400,120))
+pdf("Figs/phyla_top.pdf", height = 6, width = 12)
+p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=PhyAbund-se, ymax=PhyAbund+se)) + facet_wrap(~Rank2, ncol = 4, scales="free_y") + scale_colour_hue(h=c(400,120))
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + labs(x="Date",y="Mean Relative Abundance") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
+dev.off()
+
+####### NOT REFACTORED ##########
+
+# Plot summary of genus abundance of methanotrophic genera. 
+p <- ggplot(relabund.methanos.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 5, scales="free_y") + scale_colour_manual(values=cbPalette)
+p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ labs(x="Date",y="Mean Relative\nAbundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
+
+# Find all genera
+all.genera <- sort(get_taxa_unique(bact.relabund, "Rank6"), decreasing=FALSE)
+bact.relabund.all.genera <- subset_taxa(bact.relabund, Rank6 %in% as.factor(all.genera))
+bact.relabund.all.genera <- psmelt(bact.relabund.all.genera)
+bact.relabund.all.genera.genus <- bact.relabund.all.genera%>%
+  group_by(Sample, Rank6)%>%
+  mutate(GenusAbundance = sum(Abundance))%>%
+  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Rank6, Rank6) 
+
+bact.relabund.all.genera.genus.est <- summarySE(bact.relabund.all.genera.genus, measurevar="GenusAbundance", groupvars=c("Site","Date", "Rank6"))
+head(bact.relabund.all.genera.genus.est)
+bact.relabund.all.genera.genus.est$Date <- as.character(bact.relabund.all.genera.genus.est$Date)
+bact.relabund.all.genera.genus.est$Date <- as.numeric(bact.relabund.all.genera.genus.est$Date)
+p <- ggplot(bact.relabund.all.genera.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
+p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
 
 # Plot top phyla abundances. 
-p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=PhyAbund-se, ymax=PhyAbund+se)) + facet_wrap(~Phylum, ncol = 3, scales="free_y") + scale_colour_manual(values=cbPalette)
+p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=PhyAbund-se, ymax=PhyAbund+se)) + facet_wrap(~Rank2, ncol = 3, scales="free_y") + scale_colour_manual(values=cbPalette)
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + labs(x="Date",y="Mean Relative Abundance") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
 
 # Find top 30 classes and subset bact.relabund. 
@@ -238,7 +251,7 @@ relabund.top.classes <- psmelt(bact.relabund.subset.taxa)
 relabund.top.classes.class <- relabund.top.classes%>%
   group_by(Sample, Class)%>%
   mutate(ClassAbundance = sum(Abundance))%>%
-  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Phylum, Family, Class)
+  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Rank2, Rank6, Class)
 relabund.top.classes.class.print <- summarySE(relabund.top.classes.class, measurevar="ClassAbundance", groupvars=c("Class"))
 relabund.top.classes.class.print[,c("Class","N","ClassAbundance")] 
 
@@ -259,7 +272,7 @@ bact.relabund.all.classes <- psmelt(bact.relabund.all.classes)
 bact.relabund.all.classes.class <- bact.relabund.all.classes%>%
   group_by(Sample, Class)%>%
   mutate(ClassAbundance = sum(Abundance))%>%
-  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Family, Class) 
+  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Rank6, Class) 
 
 bact.relabund.all.classes.class.est <- summarySE(bact.relabund.all.classes.class, measurevar="ClassAbundance", groupvars=c("Site","Date", "Class"))
 head(bact.relabund.all.classes.class.est)
@@ -354,28 +367,28 @@ p + theme_bw() +
 # Find genera of interest and subset bact.relabund. 
 genofint <- read.table(file = "taxa-of-interest/genera-of-interest.txt")
 genofint.list <- as.vector(genofint$V1)
-bact.relabund.subset.genofint = subset_taxa(bact.relabund, Genus %in% genofint.list)
-bact.relabund.subset.genofint.taxa <- subset_taxa(bact.relabund.subset.genofint, Genus %in% as.factor(genofint.list))
+bact.relabund.subset.genofint = subset_taxa(bact.relabund, Rank6 %in% genofint.list)
+bact.relabund.subset.genofint.taxa <- subset_taxa(bact.relabund.subset.genofint, Rank6 %in% as.factor(genofint.list))
 bact.relabund.subset.genofint.taxa 
 relabund.genofint <- psmelt(bact.relabund.subset.genofint.taxa)
 relabund.genofint.genus <- relabund.genofint%>%
-  group_by(Sample, Genus)%>% 
+  group_by(Sample, Rank6)%>% 
   mutate(GenusAbundance = sum(Abundance))%>%
-  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Family, Genus)
+  distinct(Sample, GenusAbundance, TreatmentGroup, Site, Date, Rank6, Rank6)
 head(relabund.genofint.genus) 
 
 # Summary of genus abundance of genera of interest. 
-relabund.genofint.genus.est <- summarySE(relabund.genofint.genus, measurevar="GenusAbundance", groupvars=c("Site","Date","Genus")) 
+relabund.genofint.genus.est <- summarySE(relabund.genofint.genus, measurevar="GenusAbundance", groupvars=c("Site","Date","Rank6")) 
 head(relabund.genofint.genus.est)
 relabund.genofint.genus.est$Date <- as.character(relabund.genofint.genus.est$Date)
 relabund.genofint.genus.est$Date <- as.numeric(relabund.genofint.genus.est$Date) 
 
 # Plot summary of genus abundance of genera of interest. 
-p <- ggplot(relabund.genofint.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
+p <- ggplot(relabund.genofint.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120))
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + ylab("Mean Relative Abundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic"))  
 
 # Plot summary of genus abundance of genera of interest. 
-p <- ggplot(relabund.genofint.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Genus, ncol = 3, scales="free_y") + scale_colour_manual(values=cbPalette) 
+p <- ggplot(relabund.genofint.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 3, scales="free_y") + scale_colour_manual(values=cbPalette) 
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + ylab("Mean Relative Abundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
 
 # Find classes_zulk of interest and subset bact.relabund. 
@@ -388,13 +401,13 @@ relabund.classzulk <- psmelt(bact.relabund.subset.classzulk.taxa)
 relabund.classzulk.class <- relabund.classzulk%>%
   group_by(Sample, Class)%>%
   mutate(ClassAbundance = sum(Abundance))%>%
-  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Phylum, Family, Class)
+  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Rank2, Rank6, Class)
 length(relabund.classzulk.class$Class); head(relabund.classzulk.class)
 relabund.classzulk.class <- subset(relabund.classzulk.class, Class!="Chloroplast")
 length(relabund.classzulk.class$Class); head(relabund.classzulk.class) 
 
 # Summary of class abundance of classes_zulk of interest. 
-relabund.classzulk.class.est <- summarySE(relabund.classzulk.class, measurevar ="ClassAbundance", groupvars=c("Site","Date","Phylum","Class"))
+relabund.classzulk.class.est <- summarySE(relabund.classzulk.class, measurevar ="ClassAbundance", groupvars=c("Site","Date","Rank2","Class"))
 length(relabund.classzulk.class.est$Class)
 relabund.classzulk.class.est$Date <- as.character(relabund.classzulk.class.est$Date)
 relabund.classzulk.class.est$Date <- as.numeric(relabund.classzulk.class.est$Date) 
@@ -406,7 +419,7 @@ p <- ggplot(relabund.classzulk.class.est.merge, aes(x=Date, y=ClassAbundance, co
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
 
 # Summary of class abundance of classes_zulk of interest. 
-relabund.classzulk.class.est.nosplit <- summarySE(relabund.classzulk.class.est, measurevar ="ClassAbundance", groupvars=c("Phylum","Class"))
+relabund.classzulk.class.est.nosplit <- summarySE(relabund.classzulk.class.est, measurevar ="ClassAbundance", groupvars=c("Rank2","Class"))
 head(relabund.classzulk.class.est.nosplit)
 relabund.classzulk.class.est.merge.nosplit <- merge(relabund.classzulk.class.est.nosplit, classzulk, by ="Class")
 relabund.classzulk.class.est.merge.nosplit 
@@ -416,7 +429,7 @@ limits <- aes(ymin = ClassAbundance-se, ymax= ClassAbundance+se)
 p <- ggplot(df, aes(Class))
 p <- p + 
   ylab("Mean Relative Abundance")+
-  facet_grid(~Phylum, scales = "free", space="free") +
+  facet_grid(~Rank2, scales = "free", space="free") +
   guides(color=guide_legend(title="Growth Season")) + 
   #theme_bw() + 
   theme(legend.position="top")+
@@ -436,7 +449,7 @@ p <- p +
   geom_point(aes(y = ClassAbundance), size = 2) + 
   geom_errorbar(limits, color = "black", width=0.5) +
   ylab("Mean Relative Abundance") +
-  facet_grid(~Phylum, scales = "free", space="free") +
+  facet_grid(~Rank2, scales = "free", space="free") +
   guides(color=guide_legend(title="Growth Season")) + 
   theme_bw() + 
   theme(legend.position="top") +
