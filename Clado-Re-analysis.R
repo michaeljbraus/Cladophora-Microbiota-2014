@@ -55,7 +55,6 @@ bact.rich.est <- merge(bact.rich.est, sam.data, by = "SampleID.1")
 bact.rich.est$Site <- as.factor(bact.rich.est$Site)
 bact.rich.est$Date <- as.numeric(bact.rich.est$Date)
 write.table(bact.rich.est,"Figs/bact.rich.est.txt",sep="\t",row.names=FALSE)
-
 # Linear regressions of diversity over time at each site. 
 bact.rich.est.sha <- summarySE(bact.rich.est, measurevar="Shannon", groupvars=c("Date","Site")); bact.rich.est.sha
 north <- subset(bact.rich.est.sha, Site=="North")
@@ -84,12 +83,23 @@ clado.adonis
 sink()
 
 # Ordination. Maybe tweak k value. 
-ordNMDS <- ordinate(bact.relabund, method="NMDS", distance="bray", k=2)  
-
-# Plot ordination. 
-pdf("Figs/nmds_plot_messy.pdf")
-ord <- plot_ordination(bact.relabund, ordNMDS, shape="Site", color = "Date") + geom_point(size=5)
-ord + theme_bw() + scale_colour_hue(h=c(300, 500))+
+sink("Figs/ordination_stress_k2.txt")
+ordNMDS.k2 <- ordinate(bact.relabund, method="NMDS", distance="bray", k=2)  
+sink()
+sink("Figs/ordination_stress_k3.txt")
+ordNMDS.k3 <- ordinate(bact.relabund, method="NMDS", distance="bray", k=3)  
+sink()
+# Plot ordination of stress k = 3
+pdf("Figs/nmds_plot_messy_k2.pdf", width = 5, height = 4)
+ord.k2 <- plot_ordination(bact.relabund, ordNMDS.k2, shape="Site", color = "Date") + geom_point(size=5)
+ord.k2 + theme_bw() + scale_colour_hue(h=c(300, 500))+
+  geom_point(colour="white", size = 3)+
+  geom_point(colour="black", size = 1)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())   
+dev.off()
+# Plot ordination of stress k = 3.
+pdf("Figs/nmds_plot_messy_k3.pdf", width = 5, height = 4)
+ord.k3 <- plot_ordination(bact.relabund, ordNMDS.k3, shape="Site", color = "Date") + geom_point(size=5)
+ord.k3 + theme_bw() + scale_colour_hue(h=c(300, 500))+
   geom_point(colour="white", size = 3)+
   geom_point(colour="black", size = 1)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())   
 dev.off()
@@ -213,6 +223,79 @@ pdf("Figs/phyla_top.pdf", height = 6, width = 12)
 p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=PhyAbund-se, ymax=PhyAbund+se)) + facet_wrap(~Rank2, ncol = 4, scales="free_y") + scale_colour_hue(h=c(400,120))
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + labs(x="Date",y="Mean Relative Abundance") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
 dev.off()
+
+# Find classes_zulk of interest and subset bact.relabund. 
+classzulk <- read.csv(file = "taxa-of-interest/classes-zulkifly.csv", header = T)
+classzulk.list <- as.vector(classzulk$Rank3)
+bact.relabund.subset.classzulk = subset_taxa(bact.relabund, Rank3 %in% classzulk.list)
+bact.relabund.subset.classzulk.taxa <- subset_taxa(bact.relabund.subset.classzulk, Rank3 %in% as.factor(classzulk.list))
+bact.relabund.subset.classzulk.taxa
+relabund.classzulk <- psmelt(bact.relabund.subset.classzulk.taxa)
+relabund.classzulk.class <- relabund.classzulk%>%
+  group_by(Sample, Rank3)%>%
+  mutate(Rank3Abundance = sum(Abundance))%>%
+  distinct(Sample, Rank3Abundance, TreatmentGroup, Site, Date, Rank3, Rank6, Rank3)
+length(relabund.classzulk.class$Rank3); head(relabund.classzulk.class)
+relabund.classzulk.class <- subset(relabund.classzulk.class, Rank3!="Chloroplast")
+length(relabund.classzulk.class$Rank3); head(relabund.classzulk.class) 
+
+# Summary of class abundance of classes_zulk of interest. 
+relabund.classzulk.class.est <- summarySE(relabund.classzulk.class, measurevar ="Rank3Abundance", groupvars=c("Site","Date","Rank3"))
+length(relabund.classzulk.class.est$Rank3)
+relabund.classzulk.class.est$Date <- as.character(relabund.classzulk.class.est$Date)
+relabund.classzulk.class.est$Date <- as.numeric(relabund.classzulk.class.est$Date) 
+
+# Plot MERGED summary of class abundance of classes_zulk of interest and Zulkifly et al. class abundances. 
+relabund.classzulk.class.est.merge <- merge(relabund.classzulk.class.est, classzulk, by = "Rank3")
+head(relabund.classzulk.class.est.merge)
+write.table(relabund.classzulk.class.est.merge,"Figs/relabund.classzulk.class.est.merge.txt",sep="\t",row.names=FALSE)
+pdf("Figs/relabund.classzulk.class.est.merge.pdf", height = 7, width = 8)
+p <- ggplot(relabund.classzulk.class.est.merge, aes(x=Date, y=Rank3Abundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=Rank3Abundance-se, ymax=Rank3Abundance+se)) + facet_wrap(~Rank3, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120)) + geom_hline(aes(yintercept = ClassAbundance_zulkifly), linetype="dashed")+ scale_colour_hue(h=c(400, 120))
+p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) + ylab("Mean Relative Abundance")
+dev.off()
+
+####### SANDBOX ##########
+
+# Summary of class abundance of classes_zulk of interest. 
+relabund.classzulk.class.est.nosplit <- summarySE(relabund.classzulk.class.est, measurevar ="Rank3Abundance", groupvars=c("Rank3","Rank2"))
+head(relabund.classzulk.class.est.nosplit)
+relabund.classzulk.class.est.merge.nosplit <- merge(relabund.classzulk.class.est.nosplit, classzulk, by ="Rank3")
+relabund.classzulk.class.est.merge.nosplit 
+
+df <- relabund.classzulk.class.est.merge.nosplit
+limits <- aes(ymin = Rank3Abundance-se, ymax= Rank3Abundance+se)
+p <- ggplot(df, aes(Rank3))
+p <- p + 
+  ylab("Mean Relative Abundance")+
+  facet_grid(~Rank3, scales = "free", space="free") +
+  guides(color=guide_legend(title="Growth Season")) + 
+  #theme_bw() + 
+  theme(legend.position="top")+
+  theme(strip.text.x = element_text(size = 8, angle = 90, face="italic")) +
+  theme(axis.text.x = element_text(size = 10, angle = 55, hjust=1),axis.text.y = element_text(size = 10))+
+  geom_point(aes(y = Rank3Abundance, color = "2014 (this study)  "), size = 3, alpha = 0.5) + 
+  geom_errorbar(limits, color = "black", width=0.5)+
+  geom_point(aes(y = ClassAbundance_zulkifly, color = "2011 (Zulkifly et al., 2012)"), size = 3, alpha = 0.5)+
+  scale_colour_manual(values=cbPalette)
+p 
+
+#write.csv(relabund.classzulk.class.est.merge.nosplit, file = "~/Dropbox/Work/Github/Mikes_MS_Data/braus-zulkifly.csv")
+df <- read.csv(file = "braus-zulkifly.csv")
+limits <- aes(ymin = ClassAbundance-se, ymax= ClassAbundance+se)
+p <- ggplot(df, aes(Class, color = Year))
+p <- p + 
+  geom_point(aes(y = ClassAbundance), size = 2) + 
+  geom_errorbar(limits, color = "black", width=0.5) +
+  ylab("Mean Relative Abundance") +
+  facet_grid(~Rank3, scales = "free", space="free") +
+  guides(color=guide_legend(title="Growth Season")) + 
+  theme_bw() + 
+  theme(legend.position="top") +
+  theme(strip.text.x = element_text(size = 8, angle = 90, face="italic")) +
+  theme(axis.text.x = element_text(size = 10, angle = 55, hjust=1),axis.text.y = element_text(size = 10)) +
+  scale_colour_manual(values=c("#b5b5b5", "#212121"))
+p+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
+
 
 ####### NOT REFACTORED ##########
 
@@ -390,70 +473,3 @@ p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1
 # Plot summary of genus abundance of genera of interest. 
 p <- ggplot(relabund.genofint.genus.est, aes(x=Date, y=GenusAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=GenusAbundance-se, ymax=GenusAbundance+se)) + facet_wrap(~Rank6, ncol = 3, scales="free_y") + scale_colour_manual(values=cbPalette) 
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + ylab("Mean Relative Abundance")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
-
-# Find classes_zulk of interest and subset bact.relabund. 
-classzulk <- read.csv(file = "taxa-of-interest/classes-zulkifly.csv", header = T)
-classzulk.list <- as.vector(classzulk$Class)
-bact.relabund.subset.classzulk = subset_taxa(bact.relabund, Class %in% classzulk.list)
-bact.relabund.subset.classzulk.taxa <- subset_taxa(bact.relabund.subset.classzulk, Class %in% as.factor(classzulk.list))
-bact.relabund.subset.classzulk.taxa
-relabund.classzulk <- psmelt(bact.relabund.subset.classzulk.taxa)
-relabund.classzulk.class <- relabund.classzulk%>%
-  group_by(Sample, Class)%>%
-  mutate(ClassAbundance = sum(Abundance))%>%
-  distinct(Sample, ClassAbundance, TreatmentGroup, Site, Date, Rank2, Rank6, Class)
-length(relabund.classzulk.class$Class); head(relabund.classzulk.class)
-relabund.classzulk.class <- subset(relabund.classzulk.class, Class!="Chloroplast")
-length(relabund.classzulk.class$Class); head(relabund.classzulk.class) 
-
-# Summary of class abundance of classes_zulk of interest. 
-relabund.classzulk.class.est <- summarySE(relabund.classzulk.class, measurevar ="ClassAbundance", groupvars=c("Site","Date","Rank2","Class"))
-length(relabund.classzulk.class.est$Class)
-relabund.classzulk.class.est$Date <- as.character(relabund.classzulk.class.est$Date)
-relabund.classzulk.class.est$Date <- as.numeric(relabund.classzulk.class.est$Date) 
-
-# Plot MERGED summary of class abundance of classes_zulk of interest and Zulkifly et al. class abundances. 
-relabund.classzulk.class.est.merge <- merge(relabund.classzulk.class.est, classzulk, by = "Class")
-head(relabund.classzulk.class.est.merge)
-p <- ggplot(relabund.classzulk.class.est.merge, aes(x=Date, y=ClassAbundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=ClassAbundance-se, ymax=ClassAbundance+se)) + facet_wrap(~Class, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120)) + geom_hline(aes(yintercept = ClassAbundance_zulkifly), linetype="dashed")+ scale_colour_hue(h=c(400, 120))
-p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
-
-# Summary of class abundance of classes_zulk of interest. 
-relabund.classzulk.class.est.nosplit <- summarySE(relabund.classzulk.class.est, measurevar ="ClassAbundance", groupvars=c("Rank2","Class"))
-head(relabund.classzulk.class.est.nosplit)
-relabund.classzulk.class.est.merge.nosplit <- merge(relabund.classzulk.class.est.nosplit, classzulk, by ="Class")
-relabund.classzulk.class.est.merge.nosplit 
-
-df <- relabund.classzulk.class.est.merge.nosplit
-limits <- aes(ymin = ClassAbundance-se, ymax= ClassAbundance+se)
-p <- ggplot(df, aes(Class))
-p <- p + 
-  ylab("Mean Relative Abundance")+
-  facet_grid(~Rank2, scales = "free", space="free") +
-  guides(color=guide_legend(title="Growth Season")) + 
-  #theme_bw() + 
-  theme(legend.position="top")+
-  theme(strip.text.x = element_text(size = 8, angle = 90, face="italic")) +
-  theme(axis.text.x = element_text(size = 10, angle = 55, hjust=1),axis.text.y = element_text(size = 10))+
-  geom_point(aes(y = ClassAbundance, color = "2014 (this study)  "), size = 3, alpha = 0.5) + 
-  geom_errorbar(limits, color = "black", width=0.5)+
-  geom_point(aes(y = ClassAbundance_zulkifly, color = "2011 (Zulkifly et al., 2012)"), size = 3, alpha = 0.5)+
-  scale_colour_manual(values=cbPalette)
-p 
-
-#write.csv(relabund.classzulk.class.est.merge.nosplit, file = "~/Dropbox/Work/Github/Mikes_MS_Data/braus-zulkifly.csv")
-df <- read.csv(file = "braus-zulkifly.csv")
-limits <- aes(ymin = ClassAbundance-se, ymax= ClassAbundance+se)
-p <- ggplot(df, aes(Class, color = Year))
-p <- p + 
-  geom_point(aes(y = ClassAbundance), size = 2) + 
-  geom_errorbar(limits, color = "black", width=0.5) +
-  ylab("Mean Relative Abundance") +
-  facet_grid(~Rank2, scales = "free", space="free") +
-  guides(color=guide_legend(title="Growth Season")) + 
-  theme_bw() + 
-  theme(legend.position="top") +
-  theme(strip.text.x = element_text(size = 8, angle = 90, face="italic")) +
-  theme(axis.text.x = element_text(size = 10, angle = 55, hjust=1),axis.text.y = element_text(size = 10)) +
-  scale_colour_manual(values=c("#b5b5b5", "#212121"))
-p+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 

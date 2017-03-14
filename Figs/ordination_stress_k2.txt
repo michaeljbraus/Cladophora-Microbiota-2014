@@ -1,0 +1,63 @@
+Run 0 stress 0.1185735 
+Run 1 stress 0.1185735 
+... Procrustes: rmse 2.567522e-06  max resid 9.29884e-06 
+... Similar to previous best
+Run 2 stress 0.1185735 
+... Procrustes: rmse 4.377699e-06  max resid 1.934865e-05 
+... Similar to previous best
+Run 3 stress 0.1185735 
+... Procrustes: rmse 3.451444e-06  max resid 1.273826e-05 
+... Similar to previous best
+Run 4 stress 0.1185735 
+... Procrustes: rmse 3.0611e-06  max resid 1.273049e-05 
+... Similar to previous best
+Run 5 stress 0.1185735 
+... Procrustes: rmse 3.859873e-06  max resid 1.748689e-05 
+... Similar to previous best
+Run 6 stress 0.1185735 
+... Procrustes: rmse 1.376881e-05  max resid 7.060741e-05 
+... Similar to previous best
+Run 7 stress 0.1185735 
+... New best solution
+... Procrustes: rmse 2.086945e-06  max resid 8.245419e-06 
+... Similar to previous best
+Run 8 stress 0.1185735 
+... Procrustes: rmse 1.015401e-06  max resid 4.007639e-06 
+... Similar to previous best
+Run 9 stress 0.1185735 
+... Procrustes: rmse 2.047116e-06  max resid 9.867259e-06 
+... Similar to previous best
+Run 10 stress 0.1185735 
+... Procrustes: rmse 1.371455e-06  max resid 4.855903e-06 
+... Similar to previous best
+Run 11 stress 0.1185735 
+... Procrustes: rmse 9.669076e-07  max resid 2.294127e-06 
+... Similar to previous best
+Run 12 stress 0.1185735 
+... Procrustes: rmse 1.186162e-06  max resid 4.73923e-06 
+... Similar to previous best
+Run 13 stress 0.1185735 
+... Procrustes: rmse 1.980904e-06  max resid 8.220878e-06 
+... Similar to previous best
+Run 14 stress 0.1185735 
+... Procrustes: rmse 1.448196e-06  max resid 6.688342e-06 
+... Similar to previous best
+Run 15 stress 0.1185735 
+... Procrustes: rmse 2.588078e-06  max resid 6.599609e-06 
+... Similar to previous best
+Run 16 stress 0.1185735 
+... Procrustes: rmse 9.017642e-07  max resid 4.190693e-06 
+... Similar to previous best
+Run 17 stress 0.1185735 
+... Procrustes: rmse 1.054471e-06  max resid 4.042729e-06 
+... Similar to previous best
+Run 18 stress 0.1185735 
+... Procrustes: rmse 1.747201e-06  max resid 1.110569e-05 
+... Similar to previous best
+Run 19 stress 0.1185735 
+... Procrustes: rmse 1.277271e-06  max resid 3.743436e-06 
+... Similar to previous best
+Run 20 stress 0.1185735 
+... Procrustes: rmse 1.211921e-06  max resid 5.453341e-06 
+... Similar to previous best
+*** Solution reached

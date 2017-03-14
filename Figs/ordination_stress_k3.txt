@@ -1,0 +1,49 @@
+Run 0 stress 0.08040683 
+Run 1 stress 0.08969591 
+Run 2 stress 0.0804067 
+... New best solution
+... Procrustes: rmse 0.0001103615  max resid 0.0004687957 
+... Similar to previous best
+Run 3 stress 0.08040555 
+... New best solution
+... Procrustes: rmse 0.0002946882  max resid 0.001486891 
+... Similar to previous best
+Run 4 stress 0.08040725 
+... Procrustes: rmse 0.000695601  max resid 0.00270326 
+... Similar to previous best
+Run 5 stress 0.08040609 
+... Procrustes: rmse 0.0005015894  max resid 0.001961152 
+... Similar to previous best
+Run 6 stress 0.08040526 
+... New best solution
+... Procrustes: rmse 0.0002181573  max resid 0.0009377742 
+... Similar to previous best
+Run 7 stress 0.08040579 
+... Procrustes: rmse 0.000232941  max resid 0.0008221234 
+... Similar to previous best
+Run 8 stress 0.08578977 
+Run 9 stress 0.08040592 
+... Procrustes: rmse 0.0002504823  max resid 0.000855331 
+... Similar to previous best
+Run 10 stress 0.08578972 
+Run 11 stress 0.08610055 
+Run 12 stress 0.08040675 
+... Procrustes: rmse 0.0004875081  max resid 0.00227266 
+... Similar to previous best
+Run 13 stress 0.08609893 
+Run 14 stress 0.08973978 
+Run 15 stress 0.08040553 
+... Procrustes: rmse 7.117282e-05  max resid 0.0002301431 
+... Similar to previous best
+Run 16 stress 0.08040626 
+... Procrustes: rmse 0.0003308553  max resid 0.001177785 
+... Similar to previous best
+Run 17 stress 0.08040557 
+... Procrustes: rmse 0.0002676898  max resid 0.00121404 
+... Similar to previous best
+Run 18 stress 0.08765685 
+Run 19 stress 0.08040547 
+... Procrustes: rmse 0.0001314115  max resid 0.0005413233 
+... Similar to previous best
+Run 20 stress 0.08589502 
+*** Solution reached
