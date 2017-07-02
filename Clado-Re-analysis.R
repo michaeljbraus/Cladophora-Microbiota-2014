@@ -224,6 +224,9 @@ p <- ggplot(bact.subset.melt.sorted.est, aes(x=Date, y=PhyAbund, color = Site, s
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10)) + labs(x="Date",y="Mean Relative Abundance") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) 
 dev.off()
 
+
+
+
 # Find classes_zulk of interest and subset bact.relabund. 
 classzulk <- read.csv(file = "taxa-of-interest/classes-zulkifly.csv", header = T)
 classzulk.list <- as.vector(classzulk$Rank3)
@@ -250,7 +253,7 @@ relabund.classzulk.class.est.merge <- merge(relabund.classzulk.class.est, classz
 head(relabund.classzulk.class.est.merge)
 write.table(relabund.classzulk.class.est.merge,"Figs/relabund.classzulk.class.est.merge.txt",sep="\t",row.names=FALSE)
 pdf("Figs/relabund.classzulk.class.est.merge.pdf", height = 7, width = 8)
-p <- ggplot(relabund.classzulk.class.est.merge, aes(x=Date, y=Rank3Abundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=Rank3Abundance-se, ymax=Rank3Abundance+se)) + facet_wrap(~Rank3, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120)) + geom_hline(aes(yintercept = ClassAbundance_zulkifly), linetype="dashed")+ scale_colour_hue(h=c(400, 120))
+p <- ggplot(relabund.classzulk.class.est.merge, aes(x=Date, y=Rank3Abundance, color = Site, shape = Site)) + geom_point(size = 2) +  geom_errorbar(aes(ymin=Rank3Abundance-se, ymax=Rank3Abundance+se)) + facet_wrap(~Rank3, ncol = 3, scales="free_y") + scale_colour_hue(h=c(400, 120)) + geom_hline(aes(yintercept = ClassAbundance_zulkifly), linetype="dashed", color="red")+ scale_colour_hue(h=c(400, 120))
 p + theme_bw() + theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1),axis.text.y = element_text(size = 10))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+ theme(strip.text = element_text(face = "italic")) + ylab("Mean Relative Abundance")
 dev.off()
 
@@ -279,7 +282,6 @@ p <- p +
   scale_colour_manual(values=cbPalette)
 p 
 
-#write.csv(relabund.classzulk.class.est.merge.nosplit, file = "~/Dropbox/Work/Github/Mikes_MS_Data/braus-zulkifly.csv")
 df <- read.csv(file = "braus-zulkifly.csv")
 limits <- aes(ymin = ClassAbundance-se, ymax= ClassAbundance+se)
 p <- ggplot(df, aes(Class, color = Year))

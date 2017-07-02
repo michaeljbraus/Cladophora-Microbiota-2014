@@ -1,0 +1,1 @@
+#SampleID	BarcodeSequence	LinkerPrimerSequence	InputFileName	DescriptionG125			G125_combined_trimmed.fasta	fumigated	Cladophora-microbita-Zulkifly
