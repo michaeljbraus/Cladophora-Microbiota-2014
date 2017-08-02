@@ -22,27 +22,3 @@ Total
 ---
 Signif. codes:  
 0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Call:
-adonis(formula = d ~ Site * Date, data = df) 
-
-Permutation: free
-Number of permutations: 999
-
-Terms added sequentially (first to last)
-
-          Df SumsOfSqs MeanSqs F.Model      R2
-Site       2    1.4537 0.72685 30.9202 0.20811
-Date       5    3.0619 0.61238 26.0507 0.43833
-Site:Date 10    1.6705 0.16705  7.1065 0.23915
-Residuals 34    0.7992 0.02351         0.11442
-Total     51    6.9854                 1.00000
-          Pr(>F)    
-Site       0.001 ***
-Date       0.001 ***
-Site:Date  0.001 ***
-Residuals           
-Total               
----
-Signif. codes:  
-0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1

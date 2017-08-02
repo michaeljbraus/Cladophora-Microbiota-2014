@@ -25,7 +25,7 @@ library(vegan)
 library(gridExtra)
 library(dplyr)
 
-setwd("~/Dropbox/Cladophora/Cladophora-Microbiota-2014/")
+setwd("~/Dropbox/Github/Cladophora-Microbiota-2014/")
 
 # Load biom file. 
 biom <- import_biom("clado_otu_table_SILVA.biom", parseFunction=parse_taxonomy_greengenes); biom 
@@ -53,21 +53,21 @@ bact.rich.est <- estimate_richness(bact, measures = NULL)
 bact.rich.est$SampleID.1 <- row.names(bact.rich.est)
 bact.rich.est <- merge(bact.rich.est, sam.data, by = "SampleID.1")
 bact.rich.est$Site <- as.factor(bact.rich.est$Site)
-bact.rich.est$Date <- as.numeric(bact.rich.est$Date)
-write.table(bact.rich.est,"Figs/bact.rich.est.txt",sep="\t",row.names=FALSE)
+bact.rich.est$Date <- as.numeric(as.character(bact.rich.est$Date)); bact.rich.est$Date
+write.table(bact.rich.est,"Figs/bact.rich.est-CHECK.txt",sep="\t",row.names=FALSE)
 # Linear regressions of diversity over time at each site. 
 bact.rich.est.sha <- summarySE(bact.rich.est, measurevar="Shannon", groupvars=c("Date","Site")); bact.rich.est.sha
 north <- subset(bact.rich.est.sha, Site=="North")
 point <- subset(bact.rich.est.sha, Site=="Point")
 south <- subset(bact.rich.est.sha, Site=="South")
-sink("Figs/diversity-linear-regressions.txt")
+sink("Figs/diversity-linear-regressions-CHECK.txt")
 lm.north <- lm(north$Shannon ~ north$Date); lm.north; summary(lm.north)
 lm.point <- lm(point$Shannon ~ point$Date); lm.point; summary(lm.point)
 lm.south <- lm(south$Shannon ~ south$Date); lm.south; summary(lm.south)
 sink()
 
 # Plot Shannon index richness. 
-pdf("Figs/richness_shannon.pdf", width=6, height=3)
+pdf("Figs/richness_shannon-CHECK.pdf", width=6, height=3)
 p.sha <- ggplot(bact.rich.est.sha, aes(x=Date, y=Shannon)) + facet_grid(~Site) +
   geom_point(size = 2) +  geom_errorbar(aes(ymin=Shannon-se, ymax=Shannon+se)) 
 p.sha + theme_bw() + geom_smooth(method="lm", se = FALSE) +

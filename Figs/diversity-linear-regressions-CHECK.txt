@@ -1,0 +1,81 @@
+
+Call:
+lm(formula = north$Shannon ~ north$Date)
+
+Coefficients:
+(Intercept)   north$Date  
+   4.812788     0.002629  
+
+
+Call:
+lm(formula = north$Shannon ~ north$Date)
+
+Residuals:
+        1         2         3         4         5         6 
+ 0.229293 -0.133610 -0.153085 -0.028593  0.006002  0.079993 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)   
+(Intercept) 4.812788   0.827718   5.815  0.00435 **
+north$Date  0.002629   0.004290   0.613  0.57316   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.159 on 4 degrees of freedom
+Multiple R-squared:  0.08581,	Adjusted R-squared:  -0.1427 
+F-statistic: 0.3755 on 1 and 4 DF,  p-value: 0.5732
+
+
+Call:
+lm(formula = point$Shannon ~ point$Date)
+
+Coefficients:
+(Intercept)   point$Date  
+    2.54271      0.01439  
+
+
+Call:
+lm(formula = point$Shannon ~ point$Date)
+
+Residuals:
+        1         2         3         4         5         6 
+-0.064828  0.007869  0.065381 -0.001786  0.071279 -0.077915 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)   
+(Intercept) 2.542710   0.365294   6.961  0.00224 **
+point$Date  0.014386   0.001893   7.598  0.00161 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.07017 on 4 degrees of freedom
+Multiple R-squared:  0.9352,	Adjusted R-squared:  0.919 
+F-statistic: 57.73 on 1 and 4 DF,  p-value: 0.00161
+
+
+Call:
+lm(formula = south$Shannon ~ south$Date)
+
+Coefficients:
+(Intercept)   south$Date  
+    0.70312      0.02523  
+
+
+Call:
+lm(formula = south$Shannon ~ south$Date)
+
+Residuals:
+       1        2        3        4        5        6 
+ 0.13348 -0.01953 -0.10996 -0.08611 -0.05279  0.13491 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)   
+(Intercept) 0.703116   0.630620   1.115  0.32733   
+south$Date  0.025232   0.003269   7.719  0.00152 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.1211 on 4 degrees of freedom
+Multiple R-squared:  0.9371,	Adjusted R-squared:  0.9214 
+F-statistic: 59.59 on 1 and 4 DF,  p-value: 0.001516
+
