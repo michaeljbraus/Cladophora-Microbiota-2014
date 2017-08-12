@@ -43,14 +43,6 @@ pdf("Zulk2012-Figs/plot_richness_raw.pdf")
 plot_richness(bact) 
 dev.off()
 
-# Plot the phyla of the top 5000 OTUs. 
-pdf("Zulk2012-Figs/phyla_top5000_otus.pdf")
-TopNOTUs <- names(sort(taxa_sums(bact.relabund), TRUE)[1:5000])
-bact5000   <- prune_taxa(TopNOTUs, bact.relabund)
-p = plot_bar(bact5000, fill="Phylum")
-p + geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack") 
-dev.off()
-
 # Plot the classes.  
 pdf("Zulk2012-Figs/class_relabund.pdf")
 p = plot_bar(bact.relabund, fill="Class")

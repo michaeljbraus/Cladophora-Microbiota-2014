@@ -1,2 +1,0 @@
-"Observed"	"Chao1"	"se.chao1"	"ACE"	"se.ACE"	"Shannon"	"Simpson"	"InvSimpson"	"Fisher"	"SampleID.1"
-1236	1236	0	1236	13.3511208212819	5.49374160409904	0.966058975596212	29.4628703041855	322.240456270693	"sa1"
